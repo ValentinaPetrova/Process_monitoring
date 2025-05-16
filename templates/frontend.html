@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Process Monitor UI</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th.sortable:hover { cursor: pointer; background: #eee; }
+  </style>
+</head>
+<body>
+  <h1>Process Monitor</h1>
+
+  <div id="alerts" style="color: red; font-weight: bold; margin-top: 10px;"></div>
+
+  <label>
+    Filter by name:
+    <input type="text" id="filterInput" oninput="renderTable()" placeholder="e.g. python">
+  </label>
+
+  <label style="margin-left: 20px;">
+    Refresh every:
+    <input type="number" id="refreshInterval" value="5" min="1" style="width: 50px;"> sec
+  </label>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="sortable" onclick="sortTable('pid')">PID</th>
+        <th class="sortable" onclick="sortTable('name')">Name</th>
+        <th class="sortable" onclick="sortTable('cpu_percent')">CPU %</th>
+        <th class="sortable" onclick="sortTable('memory_percent')">Memory %</th>
+        <th>User</th>
+        <th>Is Child?</th>
+      </tr>
+    </thead>
+    <tbody id="processTableBody"></tbody>
+  </table>
+
+  <script>
+    let data = [];
+    let sortKey = 'cpu_percent';
+    let sortAsc = false;
+
+    async function fetchProcesses() {
+      try {
+        const filter = document.getElementById("filterInput").value.toLowerCase();
+        const res = await fetch(`/processes?sort_by=${sortKey}&order=${sortAsc ? 'asc' : 'desc'}&filter=${filter}`);
+        data = await res.json();
+        renderTable();
+      } catch (err) {
+      console.error("API error:", err);
+      }
+    }
+
+    function renderTable() {
+      const filter = document.getElementById("filterInput").value.toLowerCase();
+      const tbody = document.getElementById("processTableBody");
+      tbody.innerHTML = '';
+
+      const filtered = data
+        .filter(p => p.name.toLowerCase().includes(filter))
+        .sort((a, b) => {
+          let valA = a[sortKey], valB = b[sortKey];
+          if (typeof valA === 'string') return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+          return sortAsc ? valA - valB : valB - valA;
+        });
+
+      for (const p of filtered) {
+        const row = `
+          <tr>
+            <td>${p.pid}</td>
+            <td>${p.name}</td>
+            <td>${p.cpu_percent.toFixed(1)}</td>
+            <td>${p.memory_percent.toFixed(2)}</td>
+            <td>${p.username}</td>
+            <td>${p.is_child ? 'Yes' : 'No'}</td>
+          </tr>`;
+        tbody.insertAdjacentHTML('beforeend', row);
+      }
+    }
+
+    function sortTable(key) {
+      if (sortKey === key) {
+        sortAsc = !sortAsc;
+      } else {
+        sortKey = key;
+        sortAsc = true;
+      }
+      fetchProcesses();
+    }
+
+    function startAutoRefresh() {
+      const interval = parseInt(document.getElementById("refreshInterval").value) * 1000;
+      setInterval(fetchProcesses, interval);
+      setInterval(() => {fetchProcesses();fetchAlerts();}, interval);
+    }
+
+    async function fetchAlerts() {
+      const res = await fetch('/alerts');
+      const alerts = await res.json();
+      const alertBox = document.getElementById('alerts');
+      alertBox.innerHTML = alerts.length ? alerts.join('<br>') : '';
+    }
+
+    fetchProcesses();
+    startAutoRefresh();
+  </script>
+</body>
+</html>
