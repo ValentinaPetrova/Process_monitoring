@@ -13,7 +13,7 @@ The app provides detailed information about currently running system processes, 
 - Identify child processes using PPID
 
 ## Architecture
-``
+```
 process-monitor/
 ├── monitor.py          # Monitors process data and detects anomalies
 ├── restapi.py          # Flask app exposing APIs and frontend
@@ -22,7 +22,7 @@ process-monitor/
 ├── static/            
 ├── requirements.txt    
 └── README.md          
-''
+```
 ## How Sorting and Filtering Work
 ### Sorting
 Click column headers (PID, Name, CPU %, Memory %) to toggle between ascending and descending.
