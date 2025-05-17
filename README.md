@@ -42,3 +42,11 @@ If a process’s CPU spikes by more than 50% compared to the last sample, an ale
 Each process includes a ppid field (parent process ID).
 If ppid != 0, it's marked as a child process.
 Displayed in the table under "Is Child?"
+
+## Run the app
+Run the Flask backend API:
+```
+python restapi.py
+```
+By default, the server will start on:
+http://localhost:5000/
